@@ -1,0 +1,17 @@
+name: iems490bnn
+dependencies:
+  - python = 3.7
+  - pip
+  - pip:
+    - ipython == 7.19
+    - jupyter
+    - jedi==0.17.2
+    - numpy == 1.19.0
+    - scipy == 1.6.0
+    - matplotlib == 3.3.3
+    - seaborn == 0.11.1
+    - pandas == 1.2.0
+    - scikit-learn == 0.24.1
+    - torch >=1.7,<1.8
+    - pyro-ppl >= 1.4.1
+    - gpytorch == 1.4.0
