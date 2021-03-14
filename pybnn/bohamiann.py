@@ -16,7 +16,7 @@ from pybnn.util.infinite_dataloader import infinite_dataloader
 from pybnn.util.layers import AppendLayer
 from pybnn.util.normalization import zero_mean_unit_var_denormalization, zero_mean_unit_var_normalization
 from functools import partial
-
+from typing import List
 
 class AppendLayer(nn.Module):
     def __init__(self, noise=1e-3, *args, **kwargs):
@@ -35,7 +35,7 @@ class MLPwithNoise(nn.Module):
         activation:str='Sigmoid',
         noise:float=1e-2
     ):
-        super(MLP,self).__init__()
+        super(MLPwithNoise,self).__init__()
 
         hidden_layers = []
         for hsize in h_sizes:
