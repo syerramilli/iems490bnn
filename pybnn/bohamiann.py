@@ -15,25 +15,67 @@ from pybnn.sampler import AdaptiveSGHMC, SGLD, SGHMC, PreconditionedSGLD
 from pybnn.util.infinite_dataloader import infinite_dataloader
 from pybnn.util.layers import AppendLayer
 from pybnn.util.normalization import zero_mean_unit_var_denormalization, zero_mean_unit_var_normalization
+from functools import partial
 
+
+class AppendLayer(nn.Module):
+    def __init__(self, noise=1e-3, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.register_buffer('log_var',torch.log(torch.tensor(noise)))
+
+    def forward(self, x):
+        return torch.cat((x, self.log_var * torch.ones_like(x)), dim=1)
+
+class MLPwithNoise(nn.Module):
+    def __init__(
+        self,
+        input_dim:int,
+        h_sizes:List[int],
+        output_dim:int,
+        activation:str='Sigmoid',
+        noise:float=1e-2
+    ):
+        super(MLP,self).__init__()
+
+        hidden_layers = []
+        for hsize in h_sizes:
+            hidden_layers.append(nn.Linear(input_dim,hsize))
+            hidden_layers.append(getattr(nn,activation)())
+            input_dim = hsize
+        
+        self.hidden_layers = nn.Sequential(*hidden_layers)  
+        self.output = nn.Linear(h_sizes[-1],output_dim)
+        self.log_std = AppendLayer(noise=noise)
+    
+    def forward(self,x):
+        x = self.hidden_layers(x)
+        x = self.output(x) 
+        return self.log_std(x)
+
+def get_architecture(
+    input_dimensionality:int,
+    h_sizes:List[int],
+    output_dim:int,
+    numerical_index:int,
+    activation:str='Tanh',
+    noise:float=0.01
+    ) -> torch.nn.Module:
+    return MLPwithNoise(
+        input_dim=input_dimensionality,
+        h_sizes=h_sizes,
+        output_dim=1,
+        activation = activation,
+        noise=noise
+    )
 
 def get_default_network(input_dimensionality: int) -> torch.nn.Module:
-    class Architecture(torch.nn.Module):
-        def __init__(self, n_inputs, n_hidden=50):
-            super(Architecture, self).__init__()
-            self.fc1 = torch.nn.Linear(n_inputs, n_hidden)
-            self.fc2 = torch.nn.Linear(n_hidden, n_hidden)
-            self.fc3 = torch.nn.Linear(n_hidden, 1)
-            self.log_std = AppendLayer(noise=1e-3)
-
-        def forward(self, input):
-            x = torch.tanh(self.fc1(input))
-            x = torch.tanh(self.fc2(x))
-            x = self.fc3(x)
-            return self.log_std(x)
-
-    return Architecture(n_inputs=input_dimensionality)
-
+    return MLPwithNoise(
+        input_dim=input_dimensionality,
+        h_sizes=[50],
+        output_dim=1,
+        activation = 'Tanh',
+        noise=0.01
+    )
 
 def nll(input: torch.Tensor, target: torch.Tensor):
     """
@@ -547,3 +589,25 @@ class Bohamiann(BaseModel):
         g = np.mean([2 * (funcs[i] - m) * (grads[i] - dmdx) for i in range(len(self.sampled_weights))], axis=0)
 
         return g
+
+def predict_bnn(
+    model:Bohamiann,
+    x_test:np.ndarray
+):
+    x_test_ = np.asarray(x_test)
+    
+    if model.do_normalize_input:
+        x_test_, *_ = model.normalize_input(x_test_, model.x_mean, model.x_std)
+    
+    def network_predict(x_test_, weights):
+        with torch.no_grad():
+            model.network_weights = weights
+            if model.use_double_precision:
+                return model.model(torch.from_numpy(x_test_).double())
+            else:
+                return model.model(torch.from_numpy(x_test_).float())
+    
+    return torch.stack([
+        network_predict(x_test_, weights=weights)
+        for weights in model.sampled_weights
+    ])
