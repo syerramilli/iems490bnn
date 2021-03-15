@@ -21,4 +21,4 @@ def weight_prior(parameters: Iterable[torch.Tensor], dtype=np.float64, wdecay: f
         num_parameters += parameter.numel()
         log_likelihood += torch.sum(-wdecay * 0.5 * (parameter ** 2))
 
-    return log_likelihood #/ num_parameters
+    return log_likelihood / num_parameters

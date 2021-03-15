@@ -21,7 +21,7 @@ from typing import List
 class AppendLayer(nn.Module):
     def __init__(self, noise=1e-3, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.register_buffer('log_var',torch.log(torch.tensor(noise)))
+        self.log_var = nn.Parameter(torch.log(torch.tensor(noise)))
 
     def forward(self, x):
         return torch.cat((x, self.log_var * torch.ones_like(x)), dim=1)
@@ -309,9 +309,11 @@ class Bohamiann(BaseModel):
             # Add prior. Note the gradient is computed by: g_prior + N/n sum_i grad_theta_xi see Eq 4
             # in Welling and Whye The 2011. Because of that we divide here by N=num of datapoints since
             # in the sample we rescale the gradient by N again
-            #loss -= log_variance_prior(self.model(x_batch)[:, 1].view((-1, 1))) / num_datapoints
+            loss -= log_variance_prior(self.model(x_batch)[:, 1].view((-1, 1))) / num_datapoints
             for name,param in self.model.named_parameters():
-                wdecay = 0.1 if 'bias' in name else 1.
+                if 'log_var' in name:
+                    continue
+                wdecay = 0.01 if 'bias' in name else 1.
                 loss -= weight_prior(param, dtype=dtype,wdecay=wdecay) / num_datapoints
             loss.backward()
             self.sampler.step()
