@@ -65,7 +65,7 @@ class BayesianMLP(PyroModule):
                 continue
             
             for name,value in list(m.named_parameters(recurse=False)):
-                scale_factor = 10. if 'bias' in name else 1.
+                scale_factor = torch.tensor(10.).sqrt() if 'bias' in name else torch.ones(1)
                 setattr(m,name,PyroSample(
                     partial(wt_distribution,shape=value.shape,scale_factor=scale_factor)
                 ))
