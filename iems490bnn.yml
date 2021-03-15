@@ -15,4 +15,4 @@ dependencies:
     - torch >=1.7,<1.8
     - pyro-ppl >= 1.4.1
     - gpytorch == 1.4.0
-    - properscoring
+    - emcee
