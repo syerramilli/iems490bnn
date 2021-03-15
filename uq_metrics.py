@@ -17,7 +17,7 @@ def neg_crps_gaussian(y_true,mean,std):
 
 def metrics_ensemble(y_true,y_means,y_stds,alpha=0.05):
     # %% prediction metric
-    rmse =((y_true-y_means.mean(axis=0))**2).mean().sqrt()
+    rmse =((y_true-y_means.mean(axis=0))**2).mean().sqrt().item()
     
     means= y_means.t()
     stds = y_stds.t()
@@ -32,14 +32,14 @@ def metrics_ensemble(y_true,y_means,y_stds,alpha=0.05):
     # coverage and interval-score 
     lq = samples.quantile(alpha/2,axis=-1)
     uq = samples.quantile(1-alpha/2,axis=-1)
-    cov_prob = (1.*(y_true>=lq)*(y_true<=uq)).mean()
+    cov_prob = (1.*(y_true>=lq)*(y_true<=uq)).mean().item()
     mean_is = neg_interval_score(y_true,lq,uq,alpha)
     
     # crps
     term1 = (samples-y_true.unsqueeze(-1)).abs().mean(axis=1)
     forecasts_diff = torch.abs(samples.unsqueeze(-1)-samples.unsqueeze(-2))
     term2 = 0.5*forecasts_diff.mean(axis=(-2,-1))
-    crps = (term1-term2).mean()
+    crps = (term1-term2).mean().item()
     
     return {
         'rmse':rmse,
