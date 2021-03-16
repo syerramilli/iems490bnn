@@ -29,14 +29,18 @@ cv = RepeatedKFold(n_splits=10,n_repeats=2,random_state=1)
 tests = [
     BayesianMLPCV(X,y,'independent',n_jobs=args.n_jobs), # independent VI
     BayesianMLPCV(X,y,'lowrank',n_jobs=args.n_jobs),
-    EnsembleMLPCV(X,y,n_models=10,n_jobs=args.n_jobs)
+    EnsembleMLPCV(X,y,n_models=10,n_jobs=args.n_jobs),
     ExactBayesianMLPCV(X,y,n_jobs=args.n_jobs)
 ]
 
 names = ['vi_ind','vi_lowrank','ensemble','sghmc']
 
 for i,test in enumerate(tests):
-    scores = test.cvloss(cv)
+    try:
+        scores = test.cvloss(cv)
+    except Exception as e:
+        print(e)
+        continue
     scores = pd.DataFrame(scores)
     scores.to_csv(
         os.path.join(save_path,names[i]+'.csv'),index=False
