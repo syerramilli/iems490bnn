@@ -1,6 +1,7 @@
 import torch
 import pandas as pd
 from sklearn.datasets import load_boston
+from sklearn.datasets import fetch_openml
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self,X,y):
@@ -24,6 +25,18 @@ def load_dataset(dataset_name):
         dat = pd.read_table('data/winequality-red.csv',sep=';')
         X = dat.iloc[:,:-1].values
         y = dat.iloc[:,-1].values
+    elif dataset_name == 'kin8nm':
+        X,y = fetch_openml('kin8nm',return_X_y=True,as_frame=False,data_home='data/')
+    elif dataset_name == 'abalone':
+        X,y = fetch_openml('abalone',return_X_y=True,as_frame=False,data_home='data/')
+        y = y.astype('float')
+    elif dataset_name == 'autompg':
+        dat = pd.read_csv(
+            'data/auto-mpg.csv',na_values='?'
+        ).dropna(axis=0)
+        del dat['car name']
+        y = dat['mpg'].values
+        X = dat.drop('mpg',axis=1).values
     
     X = torch.from_numpy(X).float()
     y = torch.from_numpy(y).float() 
