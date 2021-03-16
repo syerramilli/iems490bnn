@@ -30,6 +30,9 @@ def load_dataset(dataset_name):
     elif dataset_name == 'abalone':
         X,y = fetch_openml('abalone',return_X_y=True,as_frame=False,data_home='data/')
         y = y.astype('float')
+    elif dataset_name == 'cpu_small':
+        X,y = fetch_openml('cpu_small',return_X_y=True,as_frame=False,data_home='data/')
+        y = y.astype('float')
     elif dataset_name == 'autompg':
         dat = pd.read_csv(
             'data/auto-mpg.csv',na_values='?'
